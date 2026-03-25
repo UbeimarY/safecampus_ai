@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 
 class RegistroScreen extends StatefulWidget {
@@ -105,10 +106,56 @@ class _RegistroScreenState extends State<RegistroScreen> {
       );
       return;
     }
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    if (mounted) context.go('/mapa');
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Realizar el registro en Supabase Auth
+      // Pasamos los datos adicionales en data para que el Trigger los use
+      final response = await supabase.auth.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        data: {
+          'nombre': _nombreController.text.trim(),
+          'apellido': _apellidoController.text.trim(),
+          'telefono': _telefonoController.text.trim(),
+        },
+      );
+
+      if (response.user != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Registro exitoso! Ya puedes iniciar sesión.'),
+              backgroundColor: AppColors.riskLow,
+            ),
+          );
+          context.go('/login');
+        }
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.riskHigh,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error inesperado al registrar'),
+            backgroundColor: AppColors.riskHigh,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -294,7 +341,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
         child: LinearProgressIndicator(
           value: (_currentStep + 1) / 3,
           backgroundColor: Colors.white12,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
           minHeight: 6,
         ),
       ),
@@ -408,7 +455,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                       child: Container(
                         width: 26,
                         height: 26,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.accent,
                           shape: BoxShape.circle,
                         ),
@@ -541,8 +588,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     setState(() => _obscureConfirm = !_obscureConfirm),
                 validator: (v) {
                   if (v!.isEmpty) return 'Confirma tu contraseña';
-                  if (v != _passwordController.text)
+                  if (v != _passwordController.text) {
                     return 'Las contraseñas no coinciden';
+                  }
                   return null;
                 },
               ),
@@ -574,7 +622,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                 height: 90,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [AppColors.primary, AppColors.accent],
                   ),
                   boxShadow: [
@@ -682,14 +730,14 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
+                      text: const TextSpan(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
                           height: 1.4,
                         ),
                         children: [
-                          const TextSpan(text: 'Acepto los '),
+                          TextSpan(text: 'Acepto los '),
                           TextSpan(
                             text: 'Términos y Condiciones',
                             style: TextStyle(
@@ -697,7 +745,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const TextSpan(text: ' y la '),
+                          TextSpan(text: ' y la '),
                           TextSpan(
                             text: 'Política de Privacidad',
                             style: TextStyle(
@@ -705,7 +753,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const TextSpan(text: ' de SafeCampus AI'),
+                          TextSpan(text: ' de SafeCampus AI'),
                         ],
                       ),
                     ),

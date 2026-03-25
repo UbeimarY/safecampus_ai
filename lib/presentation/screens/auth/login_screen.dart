@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -27,10 +28,41 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+    
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    if (mounted) context.go('/mapa');
+    
+    try {
+      final supabase = Supabase.instance.client;
+      
+      final response = await supabase.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (response.user != null) {
+        if (mounted) context.go('/mapa');
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.riskHigh,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error inesperado al iniciar sesión'),
+            backgroundColor: AppColors.riskHigh,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _googleLogin() async {
@@ -160,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen>
             height: 90,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [AppColors.primary, AppColors.accent],
@@ -497,8 +529,8 @@ class _LoginScreenState extends State<LoginScreen>
           borderRadius: BorderRadius.circular(14),
         ),
       ),
-      icon: Icon(Icons.fingerprint_rounded, color: AppColors.accent, size: 22),
-      label: Text(
+      icon: const Icon(Icons.fingerprint_rounded, color: AppColors.accent, size: 22),
+      label: const Text(
         'Huella',
         style: TextStyle(color: AppColors.accent, fontSize: 14),
       ),
