@@ -11,32 +11,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  late AnimationController _bgController;
-  late Animation<double> _bgAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _bgController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
-
-    _bgAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _bgController, curve: Curves.easeInOut),
-    );
-  }
-
   @override
   void dispose() {
-    _bgController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -45,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2)); // mock temporal
+    await Future.delayed(const Duration(seconds: 2));
     setState(() => _isLoading = false);
     if (mounted) context.go('/mapa');
   }
@@ -68,52 +51,45 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: AnimatedBuilder(
-        animation: _bgAnimation,
-        builder: (context, child) {
-          return Stack(
-            children: [
-              // Fondo animado con burbujas de luz
-              _buildAnimatedBackground(),
+      body: Stack(
+        children: [
+          // Fondo estático sin animación (evita el trabe)
+          _buildStaticBackground(),
 
-              // Contenido principal
-              SafeArea(
-                child: SingleChildScrollView(
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height,
-                    child: Column(
-                      children: [
-                        // Parte superior — Logo animado
-                        Expanded(
-                          flex: 4,
-                          child: _buildHeader(),
-                        ),
+          // Contenido con scroll
+          SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Column(
+                    children: [
+                      // Header
+                      const SizedBox(height: 40),
+                      _buildHeader(),
+                      const SizedBox(height: 32),
 
-                        // Parte inferior — Formulario
-                        Expanded(
-                          flex: 6,
-                          child: _buildForm(),
-                        ),
-                      ],
-                    ),
+                      // Formulario ocupa el resto
+                      Expanded(child: _buildForm()),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ─── Fondo animado ────────────────────────────────────────────────────────
+  // ─── Fondo estático ───────────────────────────────────────────────────────
 
-  Widget _buildAnimatedBackground() {
+  Widget _buildStaticBackground() {
     return Stack(
       children: [
-        // Burbuja 1 — cyan arriba izquierda
+        // Burbuja cyan arriba izquierda
         Positioned(
-          top: -80 + (_bgAnimation.value * 40),
+          top: -80,
           left: -60,
           child: Container(
             width: 250,
@@ -122,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.accent.withValues(alpha: 0.3),
+                  AppColors.accent.withValues(alpha: 0.25),
                   Colors.transparent,
                 ],
               ),
@@ -130,9 +106,9 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
 
-        // Burbuja 2 — verde abajo derecha
+        // Burbuja verde abajo derecha
         Positioned(
-          bottom: -60 + (_bgAnimation.value * -30),
+          bottom: -60,
           right: -80,
           child: Container(
             width: 300,
@@ -141,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.riskLow.withValues(alpha: 0.2),
+                  AppColors.riskLow.withValues(alpha: 0.15),
                   Colors.transparent,
                 ],
               ),
@@ -149,9 +125,9 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
 
-        // Burbuja 3 — azul centro
+        // Burbuja azul centro derecha
         Positioned(
-          top: 200 + (_bgAnimation.value * 20),
+          top: 220,
           right: -40,
           child: Container(
             width: 180,
@@ -160,96 +136,65 @@ class _LoginScreenState extends State<LoginScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.4),
+                  AppColors.primary.withValues(alpha: 0.3),
                   Colors.transparent,
                 ],
               ),
             ),
           ),
         ),
-
-        // Líneas de cuadrícula decorativas
-        CustomPaint(
-          size: Size(
-            MediaQuery.of(context).size.width,
-            MediaQuery.of(context).size.height,
-          ),
-          painter: _GridPainter(opacity: 0.05),
-        ),
       ],
     );
   }
 
-  // ─── Header con logo ──────────────────────────────────────────────────────
+  // ─── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Logo con efecto glow
+        // Logo con glow
         FadeInDown(
-          duration: const Duration(milliseconds: 800),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Glow exterior
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.4),
-                      blurRadius: 40,
-                      spreadRadius: 10,
-                    ),
-                  ],
-                ),
+          duration: const Duration(milliseconds: 600),
+          child: Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.primary, AppColors.accent],
               ),
-              // Contenedor del ícono
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary,
-                      AppColors.accent.withValues(alpha: 0.8),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.5),
-                    width: 2,
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.4),
+                  blurRadius: 30,
+                  spreadRadius: 5,
                 ),
-                child: const Icon(
-                  Icons.shield_rounded,
-                  size: 50,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+              ],
+            ),
+            child: const Icon(
+              Icons.shield_rounded,
+              size: 50,
+              color: Colors.white,
+            ),
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        // Nombre de la app
+        // Nombre app con gradiente
         FadeInDown(
           delay: const Duration(milliseconds: 200),
           child: ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
+            shaderCallback: (bounds) => const LinearGradient(
               colors: [Colors.white, AppColors.accent],
             ).createShader(bounds),
             child: const Text(
               'SafeCampus AI',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
               ),
@@ -257,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         FadeInDown(
           delay: const Duration(milliseconds: 300),
@@ -266,7 +211,6 @@ class _LoginScreenState extends State<LoginScreen>
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 13,
-              letterSpacing: 0.5,
             ),
           ),
         ),
@@ -278,31 +222,31 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildForm() {
     return FadeInUp(
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 600),
       child: Container(
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.9),
+          color: AppColors.surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(36),
             topRight: Radius.circular(36),
           ),
           border: Border.all(
             color: AppColors.accent.withValues(alpha: 0.15),
-            width: 1,
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(28, 32, 28, 20),
+        padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Título del formulario
+              // Título
               const Text(
                 'Iniciar Sesión',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -311,26 +255,30 @@ class _LoginScreenState extends State<LoginScreen>
                 'Bienvenido de nuevo',
                 style: TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: 13,
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // Campo Email
+              // Email
               _buildEmailField(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // Campo Contraseña
+              // Contraseña
               _buildPasswordField(),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
-              // Olvidé mi contraseña
+              // Olvidé contraseña
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: Text(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                  ),
+                  child: const Text(
                     '¿Olvidaste tu contraseña?',
                     style: TextStyle(
                       color: AppColors.accent,
@@ -340,19 +288,19 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Botón Login principal
+              // Botón ingresar
               _buildLoginButton(),
 
               const SizedBox(height: 20),
 
-              // Divisor OR
+              // Divisor
               _buildDivider(),
 
               const SizedBox(height: 20),
 
-              // Botones alternativos
+              // Google + Huella
               Row(
                 children: [
                   Expanded(child: _buildGoogleButton()),
@@ -361,32 +309,30 @@ class _LoginScreenState extends State<LoginScreen>
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              // Ir a registro
+              // Link a registro
               Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '¿No tienes cuenta? ',
+                child: GestureDetector(
+                  onTap: () => context.go('/registro'),
+                  child: RichText(
+                    text: const TextSpan(
+                      text: '¿No tienes cuenta? ',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
                       ),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.go('/registro'),
-                      child: Text(
-                        'Regístrate',
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      children: [
+                        TextSpan(
+                          text: 'Regístrate',
+                          style: TextStyle(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -406,7 +352,7 @@ class _LoginScreenState extends State<LoginScreen>
       decoration: InputDecoration(
         hintText: 'Correo electrónico',
         hintStyle: const TextStyle(color: AppColors.textSecondary),
-        prefixIcon: Icon(Icons.email_outlined, color: AppColors.accent),
+        prefixIcon: const Icon(Icons.email_outlined, color: AppColors.accent),
         filled: true,
         fillColor: AppColors.cardColor,
         border: OutlineInputBorder(
@@ -415,8 +361,9 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
+        errorStyle: const TextStyle(color: AppColors.riskHigh),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) return 'Ingresa tu correo';
@@ -434,11 +381,13 @@ class _LoginScreenState extends State<LoginScreen>
       decoration: InputDecoration(
         hintText: 'Contraseña',
         hintStyle: const TextStyle(color: AppColors.textSecondary),
-        prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.accent),
+        prefixIcon:
+            const Icon(Icons.lock_outline_rounded, color: AppColors.accent),
         suffixIcon: IconButton(
           icon: Icon(
             _obscurePassword ? Icons.visibility_off : Icons.visibility,
             color: AppColors.textSecondary,
+            size: 20,
           ),
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
@@ -450,8 +399,9 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
+        errorStyle: const TextStyle(color: AppColors.riskHigh),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
@@ -466,7 +416,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: 52,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _login,
         style: ElevatedButton.styleFrom(
@@ -475,13 +425,13 @@ class _LoginScreenState extends State<LoginScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          elevation: 8,
-          shadowColor: AppColors.accent.withValues(alpha: 0.5),
+          elevation: 6,
+          shadowColor: AppColors.accent.withValues(alpha: 0.4),
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 24,
-                height: 24,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   color: Colors.black,
@@ -490,7 +440,7 @@ class _LoginScreenState extends State<LoginScreen>
             : const Text(
                 'Ingresar',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -500,21 +450,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildDivider() {
-    return Row(
+    return const Row(
       children: [
-        Expanded(
-          child: Divider(color: Colors.white12, thickness: 1),
-        ),
-        const Padding(
+        Expanded(child: Divider(color: Colors.white12)),
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'o continúa con',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
           ),
         ),
-        Expanded(
-          child: Divider(color: Colors.white12, thickness: 1),
-        ),
+        Expanded(child: Divider(color: Colors.white12)),
       ],
     );
   }
@@ -523,8 +472,8 @@ class _LoginScreenState extends State<LoginScreen>
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _googleLogin,
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        side: BorderSide(color: Colors.white24),
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        side: const BorderSide(color: Colors.white24),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
@@ -542,7 +491,7 @@ class _LoginScreenState extends State<LoginScreen>
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _biometricLogin,
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 13),
         side: BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
@@ -555,29 +504,4 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
   }
-}
-
-// ─── Painter de cuadrícula decorativa ────────────────────────────────────────
-
-class _GridPainter extends CustomPainter {
-  final double opacity;
-  _GridPainter({required this.opacity});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: opacity)
-      ..strokeWidth = 0.5;
-
-    const spacing = 40.0;
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_GridPainter oldDelegate) => false;
 }
