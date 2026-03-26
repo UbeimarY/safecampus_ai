@@ -1051,7 +1051,7 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
   Widget _buildBotonEnviar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.background,
         border: Border(top: BorderSide(color: Colors.white12)),
       ),
